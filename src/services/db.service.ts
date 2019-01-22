@@ -1,16 +1,18 @@
 import * as mysql from 'mysql';
 import {Observable} from 'rxjs/internal/Observable';
-import * as net from "net";
-import {from} from 'rxjs/internal/observable/from';
+import {of} from 'rxjs';
+import {DatabaseConfigInterface} from '../interfaces/database-config.interface';
 
 export class DbService {
-  public connect(): Observable<net.Socket> {
-     return from(mysql.createConnection({
-       host: '',
-       user: '',
-       password: '',
-       database: ''
-     }))
+  public connect(mysqlConfig?: DatabaseConfigInterface): Observable<mysql.Connection> {
+    const connectConfig: mysql.ConnectionConfig = {
+      host: mysqlConfig.host,
+      port: mysqlConfig.port,
+      user: mysqlConfig.user,
+      password: mysqlConfig.password,
+      database: mysqlConfig.database,
+      charset: mysqlConfig.charset
+    };
+    return of(mysql.createConnection(connectConfig));
   }
-
 }
