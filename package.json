@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "node_modules/typescript/bin/tsc",
     "start": "node_modules/ts-node/dist/bin.js index.ts"
   },
   "keywords": [],
@@ -18,8 +19,9 @@
     "rxjs": "^6.3.3",
     "ts-node": "^7.0.1",
     "typescript": "^3.2.4"
-  },"devDependencies": {
-    "@types/mysql": "^2.15.5",
-    "@types/mime": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/mime": "^2.0.0",
+    "@types/mysql": "^2.15.5"
   }
 }
