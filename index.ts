@@ -12,6 +12,7 @@ if ( process.argv.includes('--execute') ) {
       s3PublicKey: '',
       s3SecretKey: '',
       s3BucketName: '',
+      slackBotName: '',
       slackChannel: '',
       slackToken: '',
       packageJsonPath: '',

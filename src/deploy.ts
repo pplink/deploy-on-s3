@@ -99,6 +99,7 @@ export class Deploy {
         if (this.options.slackChannel) {
           console.log('\x1b[32m', '[Deploy-on-s3] Send slack notification');
           return this.sendNotificationOnSlack(
+            this.options.slackBotName,
             recordTrans.packageJson.name,
             recordTrans.packageJson.version,
             this.options.slackChannel,
@@ -242,12 +243,19 @@ export class Deploy {
     );
   }
 
-  public sendNotificationOnSlack(name: string, version: string, channelName: string, token: string, count: number): Observable<boolean> {
+  public sendNotificationOnSlack(
+    slackBotName: string,
+    name: string,
+    version: string,
+    channelName: string,
+    token: string,
+    count: number
+  ): Observable<boolean> {
     const web = new WebClient(token);
     const dateFormat: string = 'YYYY-MM-DD HH:mm:ss';
     return from(
       web.chat.postMessage({
-        username: 'wall-e',
+        username: slackBotName ? slackBotName : 'Deploy_BOT',
         channel: channelName,
         text: `Successfully deployed. [${name} (${version})]\n\n\nStartTime: ${moment(this.startDate).format(
           dateFormat
