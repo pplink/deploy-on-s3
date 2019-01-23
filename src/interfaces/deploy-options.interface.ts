@@ -5,11 +5,11 @@ export interface DeployOptionsInterface {
   slackChannel?: string;
   slackToken?: string;
   database?: {
-    id:string
+    id: string;
     name?: string;
     password: string;
     host: string;
-  }
+  };
   packageJsonPath?: string;
   bundleAbsoluteFilePath?: string;
 }

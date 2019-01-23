@@ -5,5 +5,5 @@ export interface DatabaseConfigInterface {
   password: string;
   database: string;
   charset: string;
-  table: string;
+  column: string;
 }
