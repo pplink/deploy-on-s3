@@ -7,6 +7,7 @@ new Deploy(
       s3PublicKey: '',
       s3SecretKey: '',
       s3BucketName: '',
+      slackBotName: '',
       slackChannel: '',
       slackToken: '',
       packageJsonPath: '',
