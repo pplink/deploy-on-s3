@@ -16,12 +16,16 @@ import { DatabaseConfigInterface } from './interfaces/database-config.interface'
 import { DbService } from './services/db.service';
 import { Subscriber } from 'rxjs';
 import { Connection, MysqlError } from 'mysql';
+import {execSync} from 'child_process';
 
 export class Deploy {
   public options: DeployOptionsInterface;
   public databaseOptions: DatabaseConfigInterface | null;
   public startDate: Date | null;
   public endDate: Date | null;
+  public currentGitCommitId: string;
+  public currentGitBranch: string;
+  public isUnTracked: number;
 
   public constructor(options: { deploy: DeployOptionsInterface; database?: DatabaseConfigInterface }, public DbService: DbService) {
     this.databaseOptions = options.database ? options.database : null;
@@ -30,6 +34,34 @@ export class Deploy {
       __dirname,
       this.options.bundleAbsoluteFilePath ? this.options.bundleAbsoluteFilePath : '../../../../dist'
     );
+    this.currentGitCommitId = execSync('git rev-parse HEAD').toString().trim();
+    this.currentGitBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+    this.isUnTracked = ( execSync('git diff-index --quiet HEAD -- || echo "untracked"').toString().trim() == 'untracked' ) ? 1 : 0;
+  }
+
+  static init(): void {
+    console.log('\x1b[33m%s\x1b[0m', '[Deploy-on-s3] initializing...');
+    fs.writeFileSync(path.join(__dirname, '../deploy-on-s3.json'), JSON.stringify({
+    deploy: {
+      s3PublicKey: '',
+      s3SecretKey: '',
+      s3BucketName: '',
+      slackChannel: '',
+      slackToken: '',
+      packageJsonPath: '',
+      bundleAbsoluteFilePath: ''
+    },
+    database: {
+      host: '',
+      port: 1,
+      user: '',
+      password: '',
+      database: '',
+      charset: '',
+      column: ''
+    }
+  }, null, 4), 'utf-8', );
+    console.log('\x1b[33m%s\x1b[0m', '[Deploy-on-s3] Successfully initialized..');
   }
 
   public execute(): Observable<boolean> {
@@ -83,6 +115,8 @@ export class Deploy {
       catchError((err: Error) => of(false))
     );
   }
+
+
 
   public getPackageJson(packageJsonPath: string): Observable<PackageJsonInterface> {
     if (!fs.existsSync(path.join(__dirname, packageJsonPath))) {

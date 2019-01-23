@@ -10,10 +10,14 @@ export declare class Deploy {
     databaseOptions: DatabaseConfigInterface | null;
     startDate: Date | null;
     endDate: Date | null;
+    currentGitCommitId: string;
+    currentGitBranch: string;
+    isUnTracked: number;
     constructor(options: {
         deploy: DeployOptionsInterface;
         database?: DatabaseConfigInterface;
     }, DbService: DbService);
+    static init(): void;
     execute(): Observable<boolean>;
     getPackageJson(packageJsonPath: string): Observable<PackageJsonInterface>;
     getBundleFiles(bundleFilePath: string): Observable<BundleInterface>;

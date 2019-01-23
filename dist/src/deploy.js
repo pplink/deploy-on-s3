@@ -1,14 +1,11 @@
 "use strict";
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var Observable_1 = require("rxjs/internal/Observable");
@@ -22,13 +19,41 @@ var path = require("path");
 var bindNodeCallback_1 = require("rxjs/internal/observable/bindNodeCallback");
 var mime = require("mime");
 var moment = require("moment");
+var child_process_1 = require("child_process");
 var Deploy = /** @class */ (function () {
     function Deploy(options, DbService) {
         this.DbService = DbService;
         this.databaseOptions = options.database ? options.database : null;
         this.options = options.deploy;
         this.options.bundleAbsoluteFilePath = path.join(__dirname, this.options.bundleAbsoluteFilePath ? this.options.bundleAbsoluteFilePath : '../../../../dist');
+        this.currentGitCommitId = child_process_1.execSync('git rev-parse HEAD').toString().trim();
+        this.currentGitBranch = child_process_1.execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+        this.isUnTracked = (child_process_1.execSync('git diff-index --quiet HEAD -- || echo "untracked"').toString().trim() == 'untracked') ? 1 : 0;
     }
+    Deploy.init = function () {
+        console.log('\x1b[33m%s\x1b[0m', '[Deploy-on-s3] initializing...');
+        fs.writeFileSync(path.join(__dirname, '../deploy-on-s3.json'), JSON.stringify({
+            deploy: {
+                s3PublicKey: '',
+                s3SecretKey: '',
+                s3BucketName: '',
+                slackChannel: '',
+                slackToken: '',
+                packageJsonPath: '',
+                bundleAbsoluteFilePath: ''
+            },
+            database: {
+                host: '',
+                port: 1,
+                user: '',
+                password: '',
+                database: '',
+                charset: '',
+                column: ''
+            }
+        }, null, 4), 'utf-8');
+        console.log('\x1b[33m%s\x1b[0m', '[Deploy-on-s3] Successfully initialized..');
+    };
     Deploy.prototype.execute = function () {
         var _this = this;
         this.startDate = new Date();

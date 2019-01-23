@@ -1,7 +1,12 @@
 import { Deploy } from './src/deploy';
 import { DbService } from './src/services/db.service';
 
-new Deploy(
+if ( process.argv.includes('--init') ) {
+  Deploy.init();
+}
+
+if ( process.argv.includes('--execute') ) {
+  new Deploy(
   {
     deploy: {
       s3PublicKey: '',
@@ -26,3 +31,6 @@ new Deploy(
 )
   .execute()
   .subscribe();
+}
+
+
