@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "init": "node_modules/ts-node/dist/bin.js index.ts --init",
-    "build": "node_modules/typescript/bin/tsc",
-    "start": "node_modules/ts-node/dist/bin.js index.ts --execute"
+    "build": "node_modules/ts-node/dist/bin.js index.ts --execute"
   },
   "keywords": [],
   "author": "",

@@ -30,6 +30,9 @@ var Deploy = /** @class */ (function () {
         this.currentGitBranch = child_process_1.execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
         this.isUnTracked = (child_process_1.execSync('git diff-index --quiet HEAD -- || echo "untracked"').toString().trim() == 'untracked') ? 1 : 0;
     }
+    Deploy.getConfig = function () {
+        return JSON.parse(fs.readFileSync(path.join(__dirname, '../deploy-on-s3.json')).toString());
+    };
     Deploy.init = function () {
         console.log('\x1b[33m%s\x1b[0m', '[Deploy-on-s3] initializing...');
         fs.writeFileSync(path.join(__dirname, '../deploy-on-s3.json'), JSON.stringify({
@@ -82,7 +85,7 @@ var Deploy = /** @class */ (function () {
             _this.endDate = new Date();
             if (_this.options.slackChannel) {
                 console.log('\x1b[32m', '[Deploy-on-s3] Send slack notification');
-                return _this.sendNotificationOnSlack(recordTrans.packageJson.name, recordTrans.packageJson.version, _this.options.slackChannel, _this.options.slackToken, recordTrans.count);
+                return _this.sendNotificationOnSlack(_this.options.slackBotName, recordTrans.packageJson.name, recordTrans.packageJson.version, _this.options.slackChannel, _this.options.slackToken, recordTrans.count);
             }
             return of_1.of(true);
         }), operators_1.concatMap(function () {
@@ -163,11 +166,11 @@ var Deploy = /** @class */ (function () {
             });
         }), operators_1.catchError(function (err) { return of_1.of({ id: -1, count: -1 }); }));
     };
-    Deploy.prototype.sendNotificationOnSlack = function (name, version, channelName, token, count) {
+    Deploy.prototype.sendNotificationOnSlack = function (slackBotName, name, version, channelName, token, count) {
         var web = new client_1.WebClient(token);
         var dateFormat = 'YYYY-MM-DD HH:mm:ss';
         return from_1.from(web.chat.postMessage({
-            username: 'wall-e',
+            username: slackBotName ? slackBotName : 'Deploy_BOT',
             channel: channelName,
             text: "Successfully deployed. [" + name + " (" + version + ")]\n\n\nStartTime: " + moment(this.startDate).format(dateFormat) + "\nEndTime: " + moment(this.endDate).format(dateFormat) + "\nDuration: " + moment(this.endDate).diff(moment(this.startDate), 'seconds') + " seconds " + (count !== -1 ? "| " + count + " times" : ''),
             icon_url: 'https://avatars.slack-edge.com/2018-08-09/413597929477_aa61114005647f68d75f_48.jpg'

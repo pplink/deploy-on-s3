@@ -6,26 +6,7 @@ if (process.argv.includes('--init')) {
     deploy_1.Deploy.init();
 }
 if (process.argv.includes('--execute')) {
-    new deploy_1.Deploy({
-        deploy: {
-            s3PublicKey: '',
-            s3SecretKey: '',
-            s3BucketName: '',
-            slackChannel: '',
-            slackToken: '',
-            packageJsonPath: '',
-            bundleAbsoluteFilePath: ''
-        },
-        database: {
-            host: '',
-            port: 1,
-            user: '',
-            password: '',
-            database: '',
-            charset: '',
-            column: ''
-        }
-    }, new db_service_1.DbService())
+    new deploy_1.Deploy(deploy_1.Deploy.getConfig(), new db_service_1.DbService())
         .execute()
         .subscribe();
 }

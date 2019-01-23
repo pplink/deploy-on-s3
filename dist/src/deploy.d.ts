@@ -17,6 +17,10 @@ export declare class Deploy {
         deploy: DeployOptionsInterface;
         database?: DatabaseConfigInterface;
     }, DbService: DbService);
+    static getConfig(): {
+        deploy: DeployOptionsInterface;
+        database?: DatabaseConfigInterface;
+    };
     static init(): void;
     execute(): Observable<boolean>;
     getPackageJson(packageJsonPath: string): Observable<PackageJsonInterface>;
@@ -27,5 +31,5 @@ export declare class Deploy {
         id: number;
         count: number;
     }>;
-    sendNotificationOnSlack(name: string, version: string, channelName: string, token: string, count: number): Observable<boolean>;
+    sendNotificationOnSlack(slackBotName: string, name: string, version: string, channelName: string, token: string, count: number): Observable<boolean>;
 }

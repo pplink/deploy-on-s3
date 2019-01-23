@@ -2,6 +2,7 @@ export interface DeployOptionsInterface {
     s3PublicKey: string;
     s3SecretKey: string;
     s3BucketName: string;
+    slackBotName?: string;
     slackChannel?: string;
     slackToken?: string;
     database?: {
