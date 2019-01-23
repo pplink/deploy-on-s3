@@ -7,27 +7,7 @@ if ( process.argv.includes('--init') ) {
 
 if ( process.argv.includes('--execute') ) {
   new Deploy(
-  {
-    deploy: {
-      s3PublicKey: '',
-      s3SecretKey: '',
-      s3BucketName: '',
-      slackBotName: '',
-      slackChannel: '',
-      slackToken: '',
-      packageJsonPath: '',
-      bundleAbsoluteFilePath: ''
-    },
-    database: {
-      host: '',
-      port: 1,
-      user: '',
-      password: '',
-      database: '',
-      charset: '',
-      column: ''
-    }
-  },
+  Deploy.getConfig(),
   new DbService()
 )
   .execute()

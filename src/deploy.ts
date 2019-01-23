@@ -39,7 +39,11 @@ export class Deploy {
     this.isUnTracked = ( execSync('git diff-index --quiet HEAD -- || echo "untracked"').toString().trim() == 'untracked' ) ? 1 : 0;
   }
 
-  static init(): void {
+  public static getConfig(): { deploy: DeployOptionsInterface; database?: DatabaseConfigInterface } {
+    return JSON.parse(fs.readFileSync(path.join(__dirname, '../deploy-on-s3.json')).toString());
+  }
+
+  public static init(): void {
     console.log('\x1b[33m%s\x1b[0m', '[Deploy-on-s3] initializing...');
     fs.writeFileSync(path.join(__dirname, '../deploy-on-s3.json'), JSON.stringify({
     deploy: {
