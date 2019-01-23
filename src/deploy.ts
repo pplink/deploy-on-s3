@@ -1,22 +1,17 @@
-import { Observable } from 'rxjs/internal/Observable';
-import { PackageJsonInterface } from './interfaces/package-json.interface';
-import { DeployOptionsInterface } from './interfaces/deploy-options.interface';
-import { catchError, concatMap, last, map, mergeAll, mergeMap, zip } from 'rxjs/operators';
-import { of } from 'rxjs/internal/observable/of';
 import * as fs from 'fs';
-import * as s3 from 'aws-sdk/clients/s3';
-import { WebClient } from '@slack/client';
-import { from } from 'rxjs/internal/observable/from';
 import * as path from 'path';
-import { bindNodeCallback } from 'rxjs/internal/observable/bindNodeCallback';
-import { BundleInterface } from './interfaces/bundle.interface';
+import { execSync } from 'child_process';
+import { Subscriber, of, bindNodeCallback, Observable, from } from 'rxjs';
+import { catchError, concatMap, last, map, mergeAll, mergeMap, zip } from 'rxjs/operators';
+import * as s3 from 'aws-sdk/clients/s3';
 import * as mime from 'mime';
 import * as moment from 'moment';
+import { WebClient } from '@slack/client';
+import { PackageJsonInterface } from './interfaces/package-json.interface';
+import { DeployOptionsInterface } from './interfaces/deploy-options.interface';
+import { BundleInterface } from './interfaces/bundle.interface';
 import { DatabaseConfigInterface } from './interfaces/database-config.interface';
 import { DbService } from './services/db.service';
-import { Subscriber } from 'rxjs';
-import { Connection, MysqlError } from 'mysql';
-import {execSync} from 'child_process';
 
 export class Deploy {
   public options: DeployOptionsInterface;
@@ -34,38 +29,59 @@ export class Deploy {
       __dirname,
       this.options.bundleAbsoluteFilePath ? this.options.bundleAbsoluteFilePath : '../../../../dist'
     );
-    this.currentGitCommitId = execSync('git rev-parse HEAD').toString().trim();
-    this.currentGitBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
-    this.isUnTracked = ( execSync('git diff-index --quiet HEAD -- || echo "untracked"').toString().trim() == 'untracked' ) ? 1 : 0;
-  }
-
-  public static getConfig(): { deploy: DeployOptionsInterface; database?: DatabaseConfigInterface } {
-    return JSON.parse(fs.readFileSync(path.join(__dirname, '../deploy-on-s3.json')).toString());
+    this.currentGitCommitId = execSync('git rev-parse HEAD')
+      .toString()
+      .trim();
+    this.currentGitBranch = execSync('git rev-parse --abbrev-ref HEAD')
+      .toString()
+      .trim();
+    this.isUnTracked =
+      execSync('git diff-index --quiet HEAD -- || echo "untracked"')
+        .toString()
+        .trim() == 'untracked'
+        ? 1
+        : 0;
   }
 
   public static init(): void {
     console.log('\x1b[33m%s\x1b[0m', '[Deploy-on-s3] initializing...');
-    fs.writeFileSync(path.join(__dirname, '../deploy-on-s3.json'), JSON.stringify({
-    deploy: {
-      s3PublicKey: '',
-      s3SecretKey: '',
-      s3BucketName: '',
-      slackChannel: '',
-      slackToken: '',
-      packageJsonPath: '',
-      bundleAbsoluteFilePath: ''
-    },
-    database: {
-      host: '',
-      port: 1,
-      user: '',
-      password: '',
-      database: '',
-      charset: '',
-      column: ''
-    }
-  }, null, 4), 'utf-8', );
+    fs.writeFileSync(
+      path.join(__dirname, '../../../../deploy-on-s3.json'),
+      JSON.stringify(
+        {
+          deploy: {
+            s3PublicKey: '',
+            s3SecretKey: '',
+            s3BucketName: '',
+            slackChannel: '',
+            slackToken: '',
+            packageJsonPath: '',
+            bundleAbsoluteFilePath: ''
+          },
+          database: {
+            host: '',
+            port: 1,
+            user: '',
+            password: '',
+            database: '',
+            charset: '',
+            column: ''
+          }
+        },
+        null,
+        4
+      ),
+      'utf-8'
+    );
     console.log('\x1b[33m%s\x1b[0m', '[Deploy-on-s3] Successfully initialized..');
+  }
+  public static getConfig(): Observable<{ deploy: DeployOptionsInterface; database?: DatabaseConfigInterface }> {
+    return new Observable((observer: Subscriber<{ deploy: DeployOptionsInterface; database?: DatabaseConfigInterface }>) => {
+      if (!fs.existsSync(path.join(__dirname, '../../../../deploy-on-s3.json'))) {
+        observer.error(new Error('There is no config file !'));
+      }
+      observer.next(JSON.parse(fs.readFileSync(path.join(__dirname, '../../../../deploy-on-s3.json')).toString()));
+    });
   }
 
   public execute(): Observable<boolean> {
@@ -120,8 +136,6 @@ export class Deploy {
       catchError((err: Error) => of(false))
     );
   }
-
-
 
   public getPackageJson(packageJsonPath: string): Observable<PackageJsonInterface> {
     if (!fs.existsSync(path.join(__dirname, packageJsonPath))) {
@@ -192,58 +206,10 @@ export class Deploy {
     packageJson: PackageJsonInterface,
     databaseOptions: DatabaseConfigInterface
   ): Observable<{ id: number; count: number }> {
-    return this.DbService.connect(this.databaseOptions).pipe(
-      concatMap(
-        sql =>
-          new Observable((observer: Subscriber<Connection>) => {
-            sql.query(
-              `CREATE TABLE IF NOT EXISTS ${databaseOptions.database}.${databaseOptions.column} (
-                id INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                packageName VARCHAR(255) NOT NULL,
-                version VARCHAR(255) NOT NULL,
-                hashKey VARCHAR(255) NOT NULL,
-                createdAt DATETIME DEFAULT now()
-              )`,
-              (err: MysqlError, result) => {
-                if (err) {
-                  observer.error(err);
-                }
-                observer.next(sql);
-              }
-            );
-          })
-      ),
-      concatMap(
-        sql =>
-          new Observable((observer: Subscriber<{ sql: Connection; id: number }>) => {
-            sql.query(
-              `INSERT INTO ${databaseOptions.database}.${databaseOptions.column} (packageName, version, hashKey) VALUES (
-                '${packageJson.name}', '${packageJson.version}', '${s3HashKey}'
-              )`,
-              (err: MysqlError, result) => {
-                if (err) {
-                  return observer.error(err);
-                }
-                observer.next({ sql, id: result.insertId });
-              }
-            );
-          })
-      ),
-      concatMap(
-        (createTrans: { sql: Connection; id: number }) =>
-          new Observable((observer: Subscriber<{ id: number; count: number }>) => {
-            createTrans.sql.query(
-              `SELECT COUNT(*) FROM ${databaseOptions.database}.${databaseOptions.column} WHERE hashKey = '${s3HashKey}'`,
-              (err: MysqlError, result) => {
-                if (err) {
-                  return observer.error(err);
-                }
-                observer.next({ id: createTrans.id, count: result[0]['COUNT(*)'] });
-              }
-            );
-          })
-      ),
-      catchError(err => of({ id: -1, count: -1 }))
+    return this.DbService.createTableColumn(databaseOptions).pipe(
+      concatMap(options => this.DbService.insertRecord(options, { ...packageJson, s3HashKey })),
+      concatMap(createTrans => this.DbService.countRecord(this.databaseOptions, s3HashKey, createTrans.id)),
+      catchError(() => of({ id: -1, count: -1 }))
     );
   }
 
