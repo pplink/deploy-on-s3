@@ -1,6 +1,6 @@
-/// <reference types="node" />
-import { Observable } from 'rxjs/internal/Observable';
-import * as net from "net";
+import { Observable } from 'rxjs';
+import * as mysql from 'mysql';
+import { DatabaseConfigInterface } from '../interfaces/database-config.interface';
 export declare class DbService {
-    connect(): Observable<net.Socket>;
+    connect(mysqlConfig?: DatabaseConfigInterface): Observable<mysql.Connection>;
 }
